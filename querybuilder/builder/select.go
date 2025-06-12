@@ -358,7 +358,7 @@ func (sb *selectBuilder) buildOffsetClause(query *strings.Builder) []any {
 }
 
 // Helper function to build conditions
-func buildConditions(conditions []Condition, dialect Dialect, paramCount *int) (string, []interface{}) {
+func buildConditions(conditions []Condition, dialect Dialect, paramCount *int) (string, []any) {
 	var (
 		sqlParts []string
 		args     []any

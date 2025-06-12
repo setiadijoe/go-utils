@@ -21,4 +21,4 @@ Designed to be efficient, well-tested, and dependency-free.
 ## Installation
 
 ```bash
-go get github.com/yourusername/go-utils
+go get github.com/setiadijoe/go-utils

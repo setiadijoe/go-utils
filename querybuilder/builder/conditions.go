@@ -7,7 +7,7 @@ import (
 
 // Condition represents a SQL WHERE condition
 type Condition interface {
-	ToSQL(dialect Dialect, argPos *int) (string, []interface{})
+	ToSQL(dialect Dialect, argPos *int) (string, []any)
 }
 
 // Operator represents comparison operators
@@ -33,15 +33,15 @@ const (
 type baseCondition struct {
 	column    string
 	operator  Operator
-	value     interface{}
+	value     any
 	valueType string // "value", "column", "subquery"
 }
 
 // ToSQL converts the condition to SQL with proper escaping
-func (c *baseCondition) ToSQL(dialect Dialect, argPos *int) (string, []interface{}) {
+func (c *baseCondition) ToSQL(dialect Dialect, argPos *int) (string, []any) {
 	var (
 		sql  strings.Builder
-		args []interface{}
+		args []any
 	)
 
 	// Column identifier
@@ -162,14 +162,14 @@ func ColumnEq(column1, column2 string) Condition {
 // betweenCondition handles BETWEEN expressions
 type betweenCondition struct {
 	column string
-	from   interface{}
-	to     interface{}
+	from   any
+	to     any
 }
 
-func (c *betweenCondition) ToSQL(dialect Dialect, argPos *int) (string, []interface{}) {
+func (c *betweenCondition) ToSQL(dialect Dialect, argPos *int) (string, []any) {
 	var (
 		sql  strings.Builder
-		args []interface{}
+		args []any
 	)
 
 	sql.WriteString(dialect.EscapeIdentifier(c.column))
