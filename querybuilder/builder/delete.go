@@ -2,6 +2,7 @@ package querybuilder
 
 import (
 	"errors"
+	"fmt"
 	"strings"
 )
 
@@ -13,6 +14,9 @@ type DeleteBuilder interface {
 	Limit(limit int) DeleteBuilder
 	Returning(columns ...string) DeleteBuilder
 	ToSQL() (string, []any, error)
+	Join(table, on string) DeleteBuilder
+	LeftJoin(table, on string) DeleteBuilder
+	RightJoin(table, on string) DeleteBuilder
 }
 
 // deleteBuilder implements DeleteBuilder
@@ -24,6 +28,7 @@ type deleteBuilder struct {
 	limit      *int
 	returning  []string
 	paramCount int
+	joins      []join
 }
 
 type order struct {
@@ -36,6 +41,34 @@ func (qb *QueryBuilder) NewDeleteBuilder() DeleteBuilder {
 	return &deleteBuilder{
 		dialect: qb.dialect,
 	}
+}
+
+// Join implementations
+func (db *deleteBuilder) Join(table, on string) DeleteBuilder {
+	db.joins = append(db.joins, join{
+		joinType:  "INNER",
+		table:     table,
+		condition: on,
+	})
+	return db
+}
+
+func (db *deleteBuilder) LeftJoin(table, on string) DeleteBuilder {
+	db.joins = append(db.joins, join{
+		joinType:  "LEFT",
+		table:     table,
+		condition: on,
+	})
+	return db
+}
+
+func (db *deleteBuilder) RightJoin(table, on string) DeleteBuilder {
+	db.joins = append(db.joins, join{
+		joinType:  "RIGHT",
+		table:     table,
+		condition: on,
+	})
+	return db
 }
 
 // From specifies the table to delete from
@@ -82,12 +115,28 @@ func (db *deleteBuilder) ToSQL() (string, []any, error) {
 
 	var (
 		query strings.Builder
-		args  []interface{}
+		args  []any
 	)
 
 	// DELETE clause
 	query.WriteString("DELETE FROM ")
+
+	// Add table aliases if using joins
+	if len(db.joins) > 0 {
+		query.WriteString(db.dialect.EscapeIdentifier(db.table))
+	}
+
+	query.WriteString(" FROM ")
 	query.WriteString(db.dialect.EscapeIdentifier(db.table))
+
+	// JOIN clauses
+	for _, j := range db.joins {
+		query.WriteString(fmt.Sprintf(" %s JOIN %s ON %s",
+			j.joinType,
+			db.dialect.EscapeIdentifier(j.table),
+			j.condition,
+		))
+	}
 
 	// WHERE clause
 	whereSQL, whereArgs := db.buildWhereClause()
@@ -124,8 +173,13 @@ func (db *deleteBuilder) buildWhereClause() (string, []any) {
 	if len(db.where) == 0 {
 		return "", nil
 	}
+
 	whereSQL, whereArgs := buildConditions(db.where, db.dialect, &db.paramCount)
-	return whereSQL, whereArgs
+	query.WriteString(" WHERE ")
+	query.WriteString(whereSQL)
+	args = append(args, whereArgs...)
+
+	return whereSQL, args
 }
 
 // buildOrderByClause builds the ORDER BY clause if supported by the dialect.
