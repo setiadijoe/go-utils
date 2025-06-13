@@ -31,13 +31,8 @@ type updateBuilder struct {
 
 type setClause struct {
 	column string
-	value  interface{}
+	value  any
 	isRaw  bool
-}
-
-type order struct {
-	column    string
-	direction string
 }
 
 // NewUpdateBuilder creates a new UpdateBuilder instance
@@ -105,7 +100,7 @@ func (ub *updateBuilder) Returning(columns ...string) UpdateBuilder {
 }
 
 // ToSQL generates the SQL query and returns the query and parameters
-func (ub *updateBuilder) ToSQL() (string, []interface{}, error) {
+func (ub *updateBuilder) ToSQL() (string, []any, error) {
 	if ub.table == "" {
 		return "", nil, errors.New("no table specified")
 	}
@@ -144,9 +139,9 @@ func (ub *updateBuilder) ToSQL() (string, []interface{}, error) {
 }
 
 // buildSetClause builds the SET clause and returns the clause and its arguments.
-func (ub *updateBuilder) buildSetClause() (string, []interface{}) {
+func (ub *updateBuilder) buildSetClause() (string, []any) {
 	var clause strings.Builder
-	var args []interface{}
+	var args []any
 	clause.WriteString(" SET ")
 	for i, set := range ub.sets {
 		if i > 0 {
@@ -166,7 +161,7 @@ func (ub *updateBuilder) buildSetClause() (string, []interface{}) {
 }
 
 // buildWhereClause builds the WHERE clause and returns the clause and its arguments.
-func (ub *updateBuilder) buildWhereClause() (string, []interface{}) {
+func (ub *updateBuilder) buildWhereClause() (string, []any) {
 	if len(ub.where) == 0 {
 		return "", nil
 	}
@@ -193,14 +188,14 @@ func (ub *updateBuilder) buildOrderByClause() string {
 }
 
 // buildLimitClause builds the LIMIT clause and returns the clause and its arguments.
-func (ub *updateBuilder) buildLimitClause() (string, []interface{}) {
+func (ub *updateBuilder) buildLimitClause() (string, []any) {
 	if ub.limit == nil {
 		return "", nil
 	}
 	switch ub.dialect.(type) {
 	case mysqlDialect, sqliteDialect:
 		clause := " LIMIT " + ub.dialect.Placeholder(ub.paramCount)
-		args := []interface{}{*ub.limit}
+		args := []any{*ub.limit}
 		ub.paramCount++
 		return clause, args
 	default:

@@ -38,13 +38,6 @@ type insertBuilder struct {
 	paramCounter int
 }
 
-// NewInsertBuilder creates a new InsertBuilder instance
-func (qb *QueryBuilder) newInsertBuilder() *insertBuilder {
-	return &insertBuilder{
-		dialect: qb.dialect,
-	}
-}
-
 // Into specifies the table to insert into
 func (ib *insertBuilder) Into(table string) InsertBuilder {
 	ib.table = table
@@ -58,7 +51,7 @@ func (ib *insertBuilder) Columns(columns ...string) InsertBuilder {
 }
 
 // Values adds a set of values to insert
-func (ib *insertBuilder) Values(values ...interface{}) InsertBuilder {
+func (ib *insertBuilder) Values(values ...any) InsertBuilder {
 	ib.values = append(ib.values, values)
 	return ib
 }
@@ -174,7 +167,7 @@ func (ib *insertBuilder) buildColumns(query *strings.Builder) error {
 
 // buildValuesOrSelectOrDefault writes the VALUES, SELECT, or DEFAULT VALUES clause
 func (ib *insertBuilder) buildValuesOrSelectOrDefault(query *strings.Builder) ([]interface{}, error) {
-	var args []interface{}
+	var args []any
 	switch {
 	case ib.useDefaults:
 		query.WriteString(" DEFAULT VALUES")

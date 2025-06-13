@@ -53,15 +53,6 @@ type join struct {
 	condition string
 }
 
-// NewSelectBuilder creates a new SelectBuilder instance
-func (qb *QueryBuilder) newSelectBuilder(columns ...string) *selectBuilder {
-	return &selectBuilder{
-		dialect:  qb.dialect,
-		columns:  columns,
-		distinct: false,
-	}
-}
-
 // From specifies the table to select from
 func (sb *selectBuilder) From(table string) SelectBuilder {
 	sb.table = table

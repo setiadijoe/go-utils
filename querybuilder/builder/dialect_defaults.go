@@ -27,7 +27,7 @@ type mysqlDialect struct {
 func (d mysqlDialect) Placeholder(index int) string {
 	var query strings.Builder
 	idx := index - 1
-	for _ = range idx {
+	for range idx {
 		query.Write([]byte("?, "))
 	}
 	query.Write([]byte("?"))
@@ -83,7 +83,7 @@ type sqliteDialect struct {
 func (d sqliteDialect) Placeholder(index int) string {
 	var query strings.Builder
 	idx := index - 1
-	for _ = range idx {
+	for range idx {
 		query.Write([]byte("?, "))
 	}
 	query.Write([]byte("?"))

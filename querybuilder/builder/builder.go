@@ -25,10 +25,8 @@ type QueryBuilder struct {
 }
 
 // New creates a new QueryBuilder instance
-func New(dialect Dialect) *QueryBuilder {
-	return &QueryBuilder{
-		dialect: dialect,
-	}
+func New() *QueryBuilder {
+	return &QueryBuilder{}
 }
 
 // WithDialect sets the SQL dialect for the builder

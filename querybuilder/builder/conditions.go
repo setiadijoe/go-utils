@@ -86,52 +86,52 @@ func newCondition(column string, operator Operator, value any, valueType string)
 }
 
 // Eq creates an equality condition
-func Eq(column string, value interface{}) Condition {
+func Eq(column string, value any) Condition {
 	return newCondition(column, Equal, value, "value")
 }
 
 // NotEq creates an inequality condition
-func NotEq(column string, value interface{}) Condition {
+func NotEq(column string, value any) Condition {
 	return newCondition(column, NotEqual, value, "value")
 }
 
 // Gt creates a greater-than condition
-func Gt(column string, value interface{}) Condition {
+func Gt(column string, value any) Condition {
 	return newCondition(column, GreatThan, value, "value")
 }
 
 // GtOrEq creates a greater-than-or-equal condition
-func GtOrEq(column string, value interface{}) Condition {
+func GtOrEq(column string, value any) Condition {
 	return newCondition(column, GreatThanOrEqual, value, "value")
 }
 
 // Lt creates a less-than condition
-func Lt(column string, value interface{}) Condition {
+func Lt(column string, value any) Condition {
 	return newCondition(column, LessTnan, value, "value")
 }
 
 // LtOrEq creates a less-than-or-equal condition
-func LtOrEq(column string, value interface{}) Condition {
+func LtOrEq(column string, value any) Condition {
 	return newCondition(column, LessThanOrEqual, value, "value")
 }
 
 // Like creates a LIKE condition
-func Like(column string, pattern interface{}) Condition {
+func Like(column string, pattern any) Condition {
 	return newCondition(column, LikeOp, pattern, "value")
 }
 
 // NotLike creates a NOT LIKE condition
-func NotLike(column string, pattern interface{}) Condition {
+func NotLike(column string, pattern any) Condition {
 	return newCondition(column, NotLikeOp, pattern, "value")
 }
 
 // In creates an IN condition
-func In(column string, values ...interface{}) Condition {
+func In(column string, values ...any) Condition {
 	return newCondition(column, InOp, values, "value")
 }
 
 // NotIn creates a NOT IN condition
-func NotIn(column string, values ...interface{}) Condition {
+func NotIn(column string, values ...any) Condition {
 	return newCondition(column, NotInOp, values, "value")
 }
 
@@ -146,7 +146,7 @@ func IsNotNull(column string) Condition {
 }
 
 // Between creates a BETWEEN condition
-func Between(column string, from, to interface{}) Condition {
+func Between(column string, from, to any) Condition {
 	return &betweenCondition{
 		column: column,
 		from:   from,
