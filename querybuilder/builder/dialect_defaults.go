@@ -35,7 +35,7 @@ func (d mysqlDialect) Placeholder(index int) string {
 }
 
 func (d mysqlDialect) EscapeIdentifier(ident string) string {
-	return "`" + strings.ReplaceAll(ident, "`", "``") + "`"
+	return "'" + strings.ReplaceAll(ident, "'", "''") + "'"
 }
 
 // MySQL-specific string escaping
