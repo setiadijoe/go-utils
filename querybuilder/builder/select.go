@@ -53,11 +53,6 @@ type join struct {
 	condition string
 }
 
-type order struct {
-	column    string
-	direction string // "ASC", "DESC"
-}
-
 // NewSelectBuilder creates a new SelectBuilder instance
 func (qb *QueryBuilder) newSelectBuilder(columns ...string) *selectBuilder {
 	return &selectBuilder{
@@ -355,22 +350,6 @@ func (sb *selectBuilder) buildOffsetClause(query *strings.Builder) []any {
 	query.WriteString(sb.dialect.Placeholder(sb.paramCount))
 	sb.paramCount++
 	return []any{*sb.offset}
-}
-
-// Helper function to build conditions
-func buildConditions(conditions []Condition, dialect Dialect, paramCount *int) (string, []any) {
-	var (
-		sqlParts []string
-		args     []any
-	)
-
-	for _, cond := range conditions {
-		sql, condArgs := cond.ToSQL(dialect, paramCount)
-		sqlParts = append(sqlParts, sql)
-		args = append(args, condArgs...)
-	}
-
-	return strings.Join(sqlParts, " AND "), args
 }
 
 // subquery implements Subquery

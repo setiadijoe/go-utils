@@ -40,17 +40,23 @@ func (qb *QueryBuilder) WithDialect(dialect Dialect) Builder {
 // Select begins a SELECT query
 func (qb *QueryBuilder) Select(columns ...string) SelectBuilder {
 	return &selectBuilder{
-		builder:  qb,
 		columns:  columns,
 		dialect:  qb.dialect,
 		distinct: false,
 	}
 }
 
+// Insert begins a INSERT query
+func (qb *QueryBuilder) Insert(table string) InsertBuilder {
+	return &insertBuilder{
+		table:   table,
+		dialect: qb.dialect,
+	}
+}
+
 // Update begins an UPDATE query
 func (qb *QueryBuilder) Update(table string) UpdateBuilder {
 	return &updateBuilder{
-		builder: qb,
 		table:   table,
 		dialect: qb.dialect,
 	}
@@ -59,7 +65,6 @@ func (qb *QueryBuilder) Update(table string) UpdateBuilder {
 // Delete begins a DELETE query
 func (qb *QueryBuilder) Delete(table string) DeleteBuilder {
 	return &deleteBuilder{
-		builder: qb,
 		table:   table,
 		dialect: qb.dialect,
 	}

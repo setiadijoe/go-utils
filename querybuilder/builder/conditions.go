@@ -237,3 +237,19 @@ func (c *logicalCondition) ToSQL(dialect Dialect, argPos *int) (string, []any) {
 
 	return sql.String(), allArgs
 }
+
+// Helper function to build conditions (shared with select/delete builders)
+func buildConditions(conditions []Condition, dialect Dialect, paramCount *int) (string, []interface{}) {
+	var (
+		sqlParts []string
+		args     []interface{}
+	)
+
+	for _, cond := range conditions {
+		sql, condArgs := cond.ToSQL(dialect, paramCount)
+		sqlParts = append(sqlParts, sql)
+		args = append(args, condArgs...)
+	}
+
+	return strings.Join(sqlParts, " AND "), args
+}
