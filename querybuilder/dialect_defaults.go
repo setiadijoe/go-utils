@@ -30,16 +30,6 @@ func (d mysqlDialect) Placeholder(index int) string {
 	return query.String()
 }
 
-func (d mysqlDialect) EscapeIdentifier(ident string) string {
-	return "'" + strings.ReplaceAll(ident, "'", "''") + "'"
-}
-
-// MySQL-specific string escaping
-func (d mysqlDialect) EscapeString(value string) string {
-	// Handle MySQL-specific escaping
-	return "'" + strings.ReplaceAll(value, "'", "''") + "'"
-}
-
 // --------------------------
 // PostgreSQL Dialect
 // --------------------------
@@ -52,16 +42,6 @@ func (d postgresDialect) Placeholder(index int) string {
 	var query strings.Builder
 	query.Write([]byte(fmt.Sprintf("$%d", index+1)))
 	return query.String()
-}
-
-func (d postgresDialect) EscapeIdentifier(ident string) string {
-	return `"` + strings.ReplaceAll(ident, `"`, `""`) + `"`
-}
-
-// PostgreSQL-specific string escaping
-func (d postgresDialect) EscapeString(value string) string {
-	// PostgreSQL allows dollar-quoted strings
-	return "'" + strings.ReplaceAll(value, "'", "''") + "'"
 }
 
 // --------------------------
@@ -78,10 +58,6 @@ func (d sqliteDialect) Placeholder(index int) string {
 	return query.String()
 }
 
-func (d sqliteDialect) EscapeIdentifier(ident string) string {
-	return `"` + strings.ReplaceAll(ident, `"`, `""`) + `"`
-}
-
 // --------------------------
 // SQL Server Dialect
 // --------------------------
@@ -96,15 +72,6 @@ func (d sqlserverDialect) Placeholder(index int) string {
 	return query.String()
 }
 
-func (d sqlserverDialect) EscapeIdentifier(ident string) string {
-	return "[" + strings.ReplaceAll(ident, "]", "]]") + "]"
-}
-
-// SQL Server-specific string escaping
-func (d sqlserverDialect) EscapeString(value string) string {
-	return "N'" + strings.ReplaceAll(value, "'", "''") + "'"
-}
-
 // --------------------------
 // Oracle Dialect
 // --------------------------
@@ -117,10 +84,6 @@ func (d oracleDialect) Placeholder(index int) string {
 	var query strings.Builder
 	query.Write([]byte(fmt.Sprintf(":%d", index+1)))
 	return query.String()
-}
-
-func (d oracleDialect) EscapeIdentifier(ident string) string {
-	return `"` + strings.ReplaceAll(ident, `"`, `""`) + `"`
 }
 
 // --------------------------
