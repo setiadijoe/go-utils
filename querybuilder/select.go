@@ -35,7 +35,6 @@ type selectBuilder struct {
 	orderBy    []order
 	limit      *int
 	offset     *int
-	args       []any
 	paramCount int
 	subquery   *subquery
 }
@@ -217,7 +216,7 @@ func (sb *selectBuilder) buildSelectClause(query *strings.Builder) error {
 			if i > 0 {
 				query.WriteString(", ")
 			}
-			query.WriteString(sb.dialect.EscapeIdentifier(col))
+			query.WriteString(col)
 		}
 	}
 	return nil
@@ -235,11 +234,11 @@ func (sb *selectBuilder) buildFromClause(query *strings.Builder) ([]any, error) 
 		query.WriteString(subSQL)
 		if sb.subquery.alias != "" {
 			query.WriteString(" AS ")
-			query.WriteString(sb.dialect.EscapeIdentifier(sb.subquery.alias))
+			query.WriteString(sb.subquery.alias)
 		}
 		args = append(args, subArgs...)
 	} else {
-		query.WriteString(sb.dialect.EscapeIdentifier(sb.table))
+		query.WriteString(sb.table)
 	}
 	return args, nil
 }
@@ -257,11 +256,11 @@ func (sb *selectBuilder) buildJoinClauses(query *strings.Builder) ([]any, error)
 			query.WriteString(subSQL)
 			if j.subquery.alias != "" {
 				query.WriteString(" AS ")
-				query.WriteString(sb.dialect.EscapeIdentifier(j.subquery.alias))
+				query.WriteString(j.subquery.alias)
 			}
 			args = append(args, subArgs...)
 		} else {
-			query.WriteString(sb.dialect.EscapeIdentifier(j.table))
+			query.WriteString(j.table)
 		}
 		query.WriteString(" ON ")
 		query.WriteString(j.condition)
@@ -290,7 +289,7 @@ func (sb *selectBuilder) buildGroupByClause(query *strings.Builder) ([]any, erro
 		if i > 0 {
 			query.WriteString(", ")
 		}
-		query.WriteString(sb.dialect.EscapeIdentifier(col))
+		query.WriteString(col)
 	}
 	return nil, nil
 }
@@ -316,7 +315,7 @@ func (sb *selectBuilder) buildOrderByClause(query *strings.Builder) error {
 		if i > 0 {
 			query.WriteString(", ")
 		}
-		query.WriteString(sb.dialect.EscapeIdentifier(ob.column))
+		query.WriteString(ob.column)
 		query.WriteString(" ")
 		query.WriteString(ob.direction)
 	}

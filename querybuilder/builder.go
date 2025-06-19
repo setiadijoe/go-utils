@@ -15,8 +15,6 @@ type SQLBuilder interface {
 // Dialect defines database-specific SQL generation rules
 type Dialect interface {
 	Placeholder(index int) string
-	EscapeIdentifier(ident string) string
-	EscapeString(value string) string
 }
 
 // QueryBuilder is the concrete implementation of Builder

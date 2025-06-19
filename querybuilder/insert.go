@@ -3,6 +3,7 @@ package querybuilder
 import (
 	"errors"
 	"fmt"
+	"regexp"
 	"strings"
 )
 
@@ -38,6 +39,29 @@ type insertBuilder struct {
 	paramCounter int
 }
 
+// rawSQL is a helper type for embedding raw SQL expressions in value lists
+type rawSQL struct {
+	value string
+	safe  bool // Mark explicitly safe values}
+}
+
+var (
+	sqlInjectionRegex = regexp.MustCompile(`(?i)(\bDROP\b|\bDELETE\b|\bINSERT\b|\bUPDATE\b|\bALTER\b)`)
+)
+
+// Raw creates a raw SQL expression after basic safety checks
+func Raw(value string) any {
+	if sqlInjectionRegex.MatchString(value) {
+		panic("potentially dangerous raw SQL expression")
+	}
+	return rawSQL{value: value}
+}
+
+// UnsafeRaw explicitly marks raw SQL as safe (use with caution)
+func UnsafeRaw(value string) interface{} {
+	return rawSQL{value: value, safe: true}
+}
+
 // Into specifies the table to insert into
 func (ib *insertBuilder) Into(table string) InsertBuilder {
 	ib.table = table
@@ -52,7 +76,17 @@ func (ib *insertBuilder) Columns(columns ...string) InsertBuilder {
 
 // Values adds a set of values to insert
 func (ib *insertBuilder) Values(values ...any) InsertBuilder {
-	ib.values = append(ib.values, values)
+	// Convert rawSQL values to proper type
+	processedValues := make([]any, len(values))
+	for i, v := range values {
+		if s, ok := v.(string); ok && strings.HasPrefix(s, "RAW:") {
+			processedValues[i] = Raw(strings.TrimPrefix(s, "RAW:"))
+		} else {
+			processedValues[i] = v
+		}
+	}
+
+	ib.values = append(ib.values, processedValues)
 	return ib
 }
 
@@ -88,11 +122,11 @@ func (ib *insertBuilder) ToSQL() (string, []any, error) {
 
 	var (
 		query strings.Builder
-		args  []interface{}
+		args  []any
 	)
 
 	query.WriteString("INSERT INTO ")
-	query.WriteString(ib.dialect.EscapeIdentifier(ib.table))
+	query.WriteString(ib.table)
 
 	if err := ib.buildColumns(&query); err != nil {
 		return "", nil, err
@@ -158,7 +192,7 @@ func (ib *insertBuilder) buildColumns(query *strings.Builder) error {
 			if i > 0 {
 				query.WriteString(", ")
 			}
-			query.WriteString(ib.dialect.EscapeIdentifier(col))
+			query.WriteString(col)
 		}
 		query.WriteString(")")
 	}
@@ -168,9 +202,11 @@ func (ib *insertBuilder) buildColumns(query *strings.Builder) error {
 // buildValuesOrSelectOrDefault writes the VALUES, SELECT, or DEFAULT VALUES clause
 func (ib *insertBuilder) buildValuesOrSelectOrDefault(query *strings.Builder) ([]interface{}, error) {
 	var args []any
+
 	switch {
 	case ib.useDefaults:
 		query.WriteString(" DEFAULT VALUES")
+
 	case ib.fromSelect != nil:
 		query.WriteString(" ")
 		selectSQL, selectArgs, err := ib.fromSelect.ToSQL()
@@ -179,6 +215,7 @@ func (ib *insertBuilder) buildValuesOrSelectOrDefault(query *strings.Builder) ([
 		}
 		query.WriteString(selectSQL)
 		args = append(args, selectArgs...)
+
 	default:
 		query.WriteString(" VALUES ")
 		for valIdx, valSet := range ib.values {
@@ -186,29 +223,36 @@ func (ib *insertBuilder) buildValuesOrSelectOrDefault(query *strings.Builder) ([
 				query.WriteString(", ")
 			}
 			query.WriteString("(")
-			for i := range valSet {
+			for i, val := range valSet {
 				if i > 0 {
 					query.WriteString(", ")
 				}
-				query.WriteString(ib.dialect.Placeholder(ib.paramCounter))
-				args = append(args, valSet[i])
-				ib.paramCounter++
+
+				// Handle rawSQL values
+				if raw, ok := val.(rawSQL); ok {
+					query.WriteString(raw.value)
+				} else {
+					query.WriteString(ib.dialect.Placeholder(ib.paramCounter))
+					args = append(args, val)
+					ib.paramCounter++
+				}
 			}
 			query.WriteString(")")
 		}
 	}
+
 	return args, nil
 }
 
 // buildOnConflict writes the ON CONFLICT clause if needed
 func (ib *insertBuilder) buildOnConflict(query *strings.Builder) ([]interface{}, error) {
-	var args []interface{}
+	var args []any
 	if ib.conflict == nil {
 		return args, nil
 	}
 	query.WriteString(" ON CONFLICT")
 	if ib.conflict.Target != "" {
-		query.WriteString(" (" + ib.dialect.EscapeIdentifier(ib.conflict.Target) + ")")
+		query.WriteString(" (" + ib.conflict.Target + ")")
 	}
 	if ib.conflict.DoNothing {
 		query.WriteString(" DO NOTHING")
@@ -219,7 +263,7 @@ func (ib *insertBuilder) buildOnConflict(query *strings.Builder) ([]interface{},
 			if !first {
 				query.WriteString(", ")
 			}
-			query.WriteString(ib.dialect.EscapeIdentifier(col))
+			query.WriteString(col)
 			query.WriteString(" = ")
 			query.WriteString(ib.dialect.Placeholder(ib.paramCounter))
 			args = append(args, val)
@@ -238,7 +282,30 @@ func (ib *insertBuilder) buildReturning(query *strings.Builder) {
 			if i > 0 {
 				query.WriteString(", ")
 			}
-			query.WriteString(ib.dialect.EscapeIdentifier(col))
+			query.WriteString(col)
 		}
 	}
+}
+
+func (ib *insertBuilder) CurrentTimestamp() any {
+	return Raw("CURRENT_TIMESTAMP")
+}
+
+func (ib *insertBuilder) Func(funcName string, args ...any) any {
+	var parts []string
+	var placeholders []string
+
+	for _, arg := range args {
+		if raw, ok := arg.(rawSQL); ok {
+			parts = append(parts, raw.value)
+		} else {
+			placeholders = append(placeholders, ib.dialect.Placeholder(ib.paramCounter))
+			ib.paramCounter++
+		}
+	}
+
+	if len(placeholders) > 0 {
+		return Raw(fmt.Sprintf("%s(%s)", funcName, strings.Join(placeholders, ",")))
+	}
+	return Raw(fmt.Sprintf("%s(%s)", funcName, strings.Join(parts, ",")))
 }

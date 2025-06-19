@@ -123,17 +123,17 @@ func (db *deleteBuilder) ToSQL() (string, []any, error) {
 
 	// Add table aliases if using joins
 	if len(db.joins) > 0 {
-		query.WriteString(db.dialect.EscapeIdentifier(db.table))
+		query.WriteString(db.table)
 	}
 
 	query.WriteString(" FROM ")
-	query.WriteString(db.dialect.EscapeIdentifier(db.table))
+	query.WriteString(db.table)
 
 	// JOIN clauses
 	for _, j := range db.joins {
 		query.WriteString(fmt.Sprintf(" %s JOIN %s ON %s",
 			j.joinType,
-			db.dialect.EscapeIdentifier(j.table),
+			j.table,
 			j.condition,
 		))
 	}
@@ -173,13 +173,8 @@ func (db *deleteBuilder) buildWhereClause() (string, []any) {
 	if len(db.where) == 0 {
 		return "", nil
 	}
-
 	whereSQL, whereArgs := buildConditions(db.where, db.dialect, &db.paramCount)
-	query.WriteString(" WHERE ")
-	query.WriteString(whereSQL)
-	args = append(args, whereArgs...)
-
-	return whereSQL, args
+	return whereSQL, whereArgs
 }
 
 // buildOrderByClause builds the ORDER BY clause if supported by the dialect.
@@ -195,7 +190,7 @@ func (db *deleteBuilder) buildOrderByClause() string {
 			if i > 0 {
 				sb.WriteString(", ")
 			}
-			sb.WriteString(db.dialect.EscapeIdentifier(ob.column))
+			sb.WriteString(ob.column)
 			sb.WriteString(" ")
 			sb.WriteString(ob.direction)
 		}
@@ -234,7 +229,7 @@ func (db *deleteBuilder) buildReturningClause() string {
 			if i > 0 {
 				sb.WriteString(", ")
 			}
-			sb.WriteString(db.dialect.EscapeIdentifier(col))
+			sb.WriteString(col)
 		}
 		return sb.String()
 	default:

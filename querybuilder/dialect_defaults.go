@@ -26,10 +26,6 @@ type mysqlDialect struct {
 
 func (d mysqlDialect) Placeholder(index int) string {
 	var query strings.Builder
-	idx := index - 1
-	for range idx {
-		query.Write([]byte("?, "))
-	}
 	query.Write([]byte("?"))
 	return query.String()
 }
@@ -54,11 +50,7 @@ type postgresDialect struct {
 
 func (d postgresDialect) Placeholder(index int) string {
 	var query strings.Builder
-	idx := index - 1
-	for i := range idx {
-		query.Write([]byte(fmt.Sprintf("$%d, ", i+1)))
-	}
-	query.Write([]byte(fmt.Sprintf("$%d", index)))
+	query.Write([]byte(fmt.Sprintf("$%d", index+1)))
 	return query.String()
 }
 
@@ -82,10 +74,6 @@ type sqliteDialect struct {
 
 func (d sqliteDialect) Placeholder(index int) string {
 	var query strings.Builder
-	idx := index - 1
-	for range idx {
-		query.Write([]byte("?, "))
-	}
 	query.Write([]byte("?"))
 	return query.String()
 }
@@ -104,11 +92,7 @@ type sqlserverDialect struct {
 
 func (d sqlserverDialect) Placeholder(index int) string {
 	var query strings.Builder
-	idx := index - 1
-	for i := range idx {
-		query.Write([]byte(fmt.Sprintf("@p%d, ", i+1)))
-	}
-	query.Write([]byte(fmt.Sprintf("@p%d", index)))
+	query.Write([]byte(fmt.Sprintf("@p%d", index+1)))
 	return query.String()
 }
 
@@ -131,11 +115,7 @@ type oracleDialect struct {
 
 func (d oracleDialect) Placeholder(index int) string {
 	var query strings.Builder
-	idx := index - 1
-	for i := range idx {
-		query.Write([]byte(fmt.Sprintf(":%d, ", i+1)))
-	}
-	query.Write([]byte(fmt.Sprintf(":%d", index)))
+	query.Write([]byte(fmt.Sprintf(":%d", index+1)))
 	return query.String()
 }
 

@@ -115,7 +115,7 @@ func (ub *updateBuilder) ToSQL() (string, []any, error) {
 	)
 
 	query.WriteString("UPDATE ")
-	query.WriteString(ub.dialect.EscapeIdentifier(ub.table))
+	query.WriteString(ub.table)
 
 	setClause, setArgs := ub.buildSetClause()
 	query.WriteString(setClause)
@@ -147,7 +147,7 @@ func (ub *updateBuilder) buildSetClause() (string, []any) {
 		if i > 0 {
 			clause.WriteString(", ")
 		}
-		clause.WriteString(ub.dialect.EscapeIdentifier(set.column))
+		clause.WriteString(set.column)
 		clause.WriteString(" = ")
 		if set.isRaw {
 			clause.WriteString(set.value.(string))
@@ -180,7 +180,7 @@ func (ub *updateBuilder) buildOrderByClause() string {
 		if i > 0 {
 			clause.WriteString(", ")
 		}
-		clause.WriteString(ub.dialect.EscapeIdentifier(ob.column))
+		clause.WriteString(ob.column)
 		clause.WriteString(" ")
 		clause.WriteString(ob.direction)
 	}
@@ -216,7 +216,7 @@ func (ub *updateBuilder) buildReturningClause() string {
 			if i > 0 {
 				clause.WriteString(", ")
 			}
-			clause.WriteString(ub.dialect.EscapeIdentifier(col))
+			clause.WriteString(col)
 		}
 		return clause.String()
 	default:

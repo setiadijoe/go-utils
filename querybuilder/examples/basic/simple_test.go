@@ -3,7 +3,7 @@ package basic
 import (
 	"testing"
 
-	querybuilder "github.com/setiadijoe/go-utils/querybuilder/builder"
+	querybuilder "github.com/setiadijoe/go-utils/querybuilder"
 )
 
 func TestSelectBasic(t *testing.T) {
@@ -28,6 +28,10 @@ func TestSelectBasic(t *testing.T) {
 			name: "Select Basic SQLite",
 			qb:   querybuilder.New().WithDialect(querybuilder.NewSQLiteDialect()),
 		},
+		{
+			name: "Select Basic SQLServer",
+			qb:   querybuilder.New().WithDialect(querybuilder.NewSQLServerDialect()),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -36,6 +40,33 @@ func TestSelectBasic(t *testing.T) {
 				t.Error("should return error")
 			} else {
 				t.Logf("query ===> %s  ====> arguments =====> %+v", query, args)
+			}
+		})
+	}
+}
+
+func TestInsertSingleBasic(t *testing.T) {
+	tests := []struct {
+		name    string
+		qb      querybuilder.Builder
+		isError bool
+	}{
+		{
+			name: "Insert MySQL",
+			qb:   querybuilder.New().WithDialect(querybuilder.NewMySQLDialect()),
+		},
+		{
+			name: "Insert Postgress",
+			qb:   querybuilder.New().WithDialect(querybuilder.NewPostgreSQLDialect()),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			query, args, err := tt.qb.Insert("people").Columns("id", "full name", "age", "is_healthy").Values(1, "Arif", 10, false).ToSQL()
+			if tt.isError && err == nil {
+				t.Error("Should return error")
+			} else {
+				t.Logf("query ==========> %s ------- arguments ==========> %+v", query, args)
 			}
 		})
 	}

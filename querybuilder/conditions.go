@@ -45,7 +45,7 @@ func (c *baseCondition) ToSQL(dialect Dialect, argPos *int) (string, []any) {
 	)
 
 	// Column identifier
-	sql.WriteString(dialect.EscapeIdentifier(c.column))
+	sql.WriteString(c.column)
 	sql.WriteString(" ")
 	sql.WriteString(string(c.operator))
 
@@ -58,7 +58,7 @@ func (c *baseCondition) ToSQL(dialect Dialect, argPos *int) (string, []any) {
 
 	switch c.valueType {
 	case "column":
-		sql.WriteString(dialect.EscapeIdentifier(c.value.(string)))
+		sql.WriteString(c.value.(string))
 	case "subquery":
 		subquery, subArgs, _ := c.value.(SQLBuilder).ToSQL()
 		sql.WriteString("(")
@@ -172,7 +172,7 @@ func (c *betweenCondition) ToSQL(dialect Dialect, argPos *int) (string, []any) {
 		args []any
 	)
 
-	sql.WriteString(dialect.EscapeIdentifier(c.column))
+	sql.WriteString(c.column)
 	sql.WriteString(" BETWEEN ")
 	sql.WriteString(dialect.Placeholder(*argPos))
 	args = append(args, c.from)
