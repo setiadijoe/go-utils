@@ -20,6 +20,10 @@ type SelectBuilder interface {
 	Offset(offset int) SelectBuilder
 	Distinct() SelectBuilder
 	ToSQL() (string, []any, error)
+	FromSubquery(subq SQLBuilder, alias string) SelectBuilder
+	JoinSubquery(subq SQLBuilder, alias, on string) SelectBuilder
+	LeftJoinSubquery(subq SQLBuilder, alias, on string) SelectBuilder
+	RightJoinSubquery(subq SQLBuilder, alias, on string) SelectBuilder
 }
 
 // selectBuilder implements SelectBuilder
@@ -42,7 +46,6 @@ type selectBuilder struct {
 // Subquery represents a subquery in FROM or JOIN clauses
 type Subquery interface {
 	SQLBuilder
-	As(alias string) Subquery
 }
 
 type join struct {
@@ -148,9 +151,7 @@ func (sb *selectBuilder) ToSQL() (string, []any, error) {
 	)
 
 	// SELECT clause
-	if err := sb.buildSelectClause(&query); err != nil {
-		return "", nil, err
-	}
+	sb.buildSelectClause(&query)
 
 	// FROM clause
 	fromArgs, err := sb.buildFromClause(&query)
@@ -167,30 +168,18 @@ func (sb *selectBuilder) ToSQL() (string, []any, error) {
 	args = append(args, joinArgs...)
 
 	// WHERE clause
-	whereArgs, err := sb.buildWhereClause(&query)
-	if err != nil {
-		return "", nil, err
-	}
+	whereArgs := sb.buildWhereClause(&query)
 	args = append(args, whereArgs...)
 
 	// GROUP BY clause
-	groupByArgs, err := sb.buildGroupByClause(&query)
-	if err != nil {
-		return "", nil, err
-	}
-	args = append(args, groupByArgs...)
+	sb.buildGroupByClause(&query)
 
 	// HAVING clause
-	havingArgs, err := sb.buildHavingClause(&query)
-	if err != nil {
-		return "", nil, err
-	}
+	havingArgs := sb.buildHavingClause(&query)
 	args = append(args, havingArgs...)
 
 	// ORDER BY clause
-	if err := sb.buildOrderByClause(&query); err != nil {
-		return "", nil, err
-	}
+	sb.buildOrderByClause(&query)
 
 	// LIMIT clause
 	limitArgs := sb.buildLimitClause(&query)
@@ -204,7 +193,7 @@ func (sb *selectBuilder) ToSQL() (string, []any, error) {
 }
 
 // buildSelectClause builds the SELECT clause.
-func (sb *selectBuilder) buildSelectClause(query *strings.Builder) error {
+func (sb *selectBuilder) buildSelectClause(query *strings.Builder) {
 	query.WriteString("SELECT ")
 	if sb.distinct {
 		query.WriteString("DISTINCT ")
@@ -219,7 +208,6 @@ func (sb *selectBuilder) buildSelectClause(query *strings.Builder) error {
 			query.WriteString(col)
 		}
 	}
-	return nil
 }
 
 // buildFromClause builds the FROM clause and returns its args.
@@ -269,20 +257,19 @@ func (sb *selectBuilder) buildJoinClauses(query *strings.Builder) ([]any, error)
 }
 
 // buildWhereClause builds the WHERE clause and returns its args.
-func (sb *selectBuilder) buildWhereClause(query *strings.Builder) ([]any, error) {
+func (sb *selectBuilder) buildWhereClause(query *strings.Builder) ([]any) {
 	if len(sb.where) == 0 {
-		return nil, nil
+		return nil
 	}
 	whereSQL, whereArgs := buildConditions(sb.where, sb.dialect, &sb.paramCount)
 	query.WriteString(" WHERE ")
 	query.WriteString(whereSQL)
-	return whereArgs, nil
+	return whereArgs
 }
 
 // buildGroupByClause builds the GROUP BY clause and returns its args.
-func (sb *selectBuilder) buildGroupByClause(query *strings.Builder) ([]any, error) {
+func (sb *selectBuilder) buildGroupByClause(query *strings.Builder) {
 	if len(sb.groupBy) == 0 {
-		return nil, nil
 	}
 	query.WriteString(" GROUP BY ")
 	for i, col := range sb.groupBy {
@@ -291,24 +278,23 @@ func (sb *selectBuilder) buildGroupByClause(query *strings.Builder) ([]any, erro
 		}
 		query.WriteString(col)
 	}
-	return nil, nil
 }
 
 // buildHavingClause builds the HAVING clause and returns its args.
-func (sb *selectBuilder) buildHavingClause(query *strings.Builder) ([]any, error) {
+func (sb *selectBuilder) buildHavingClause(query *strings.Builder) ([]any) {
 	if len(sb.having) == 0 {
-		return nil, nil
+		return nil
 	}
 	havingSQL, havingArgs := buildConditions(sb.having, sb.dialect, &sb.paramCount)
 	query.WriteString(" HAVING ")
 	query.WriteString(havingSQL)
-	return havingArgs, nil
+	return havingArgs
 }
 
 // buildOrderByClause builds the ORDER BY clause.
-func (sb *selectBuilder) buildOrderByClause(query *strings.Builder) error {
+func (sb *selectBuilder) buildOrderByClause(query *strings.Builder) {
 	if len(sb.orderBy) == 0 {
-		return nil
+		return
 	}
 	query.WriteString(" ORDER BY ")
 	for i, ob := range sb.orderBy {
@@ -319,7 +305,6 @@ func (sb *selectBuilder) buildOrderByClause(query *strings.Builder) error {
 		query.WriteString(" ")
 		query.WriteString(ob.direction)
 	}
-	return nil
 }
 
 func (sb *selectBuilder) buildLimitClause(query *strings.Builder) []any {
@@ -346,12 +331,6 @@ func (sb *selectBuilder) buildOffsetClause(query *strings.Builder) []any {
 type subquery struct {
 	builder SQLBuilder
 	alias   string
-}
-
-// As sets the alias for the subquery
-func (s *subquery) As(alias string) Subquery {
-	s.alias = alias
-	return s
 }
 
 // ToSQL generates the subquery SQL

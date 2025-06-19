@@ -15,6 +15,10 @@ func TestSelect(t *testing.T) {
 			sb:	New().WithDialect(NewMySQLDialect()).Select("id", "full name", "age").From("people").Where(Gt("age", 10)),
 		},
 		{
+			name: "Select Basic MySQL with empty columns",
+			sb:   New().WithDialect(NewMySQLDialect()).Select().From("people"),
+		},
+		{
 			name: "Select Basic Postgress",
 			sb:   New().WithDialect(NewPostgreSQLDialect()).Select("id", "full name", "age").From("people").Where(Gt("age", 10)),
 		},
@@ -36,8 +40,8 @@ func TestSelect(t *testing.T) {
 				From("people p").
 				Join("orders o", "p.id = o.person_id").
 				Where(In("p.age", 10, 11, 22)).
-				OrderBy("p.age", "asc").
-				Limit(10).Distinct(),
+				OrderBy("p.age", "asc").OrderBy("p.full_name", "desc").
+				Limit(10).GroupBy("p.id", "p.full_name", "p.age", "o.order_id"),
 		},
 		{
 			name: "Select Basic with Right Join Postgress",
@@ -55,7 +59,81 @@ func TestSelect(t *testing.T) {
 				LeftJoin("orders o", "p.id = o.person_id").
 				Where(LtOrEq("p.age", 20)).
 				OrderBy("p.age", "ASC").
+				Limit(10).Offset(10),
+		},
+		{
+			name: "Select Basic with Having Clause SQLite",
+			sb:   New().WithDialect(NewSQLiteDialect()).Select("p.id", "p.full_name", "p.age", "COUNT(o.order_id) AS order_count").
+				From("people p").Having(Gt("COUNT(o.order_id)", 5)).Distinct(),
+		},
+		{
+			name: "Select Basic with Subquery SQLServer",
+			sb:   New().WithDialect(NewSQLServerDialect()).Select("p.id", "p.full_name", "p.age", "o.order_id").FromSubquery(&subquery{
+				builder: New().WithDialect(NewSQLServerDialect()).Select("id", "full_name", "age").From("people").Where(Gt("age", 10)),
+			}, "p").Join("orders o", "p.id = o.person_id").
+				Where(In("p.age", 10, 11, 22)).
+				OrderBy("p.age", "asc").
+				Limit(10).GroupBy("p.id", "p.full_name", "p.age", "o.order_id"),
+		},
+		{
+			name: "Select with Left Join Subquery MySQL",
+			sb:   New().WithDialect(NewMySQLDialect()).Select("p.id", "p.full_name", "p.age", "o.order_id").
+				FromSubquery(&subquery{
+					builder: New().WithDialect(NewMySQLDialect()).Select("id", "full_name", "age").From("people").Where(Gt("age", 10)),
+				}, "p").
+				JoinSubquery(&subquery{
+					builder: New().WithDialect(NewMySQLDialect()).Select("order_id", "person_id").From("orders"),
+				}, "o", "p.id = o.person_id").
+				Where(In("p.age", 10, 11, 22)).
+				OrderBy("p.age", "asc").
+				Limit(10).GroupBy("p.id", "p.full_name", "p.age", "o.order_id"),
+		},
+		{
+			name: "Select with Right Join Subquery Postgress",
+			sb:   New().WithDialect(NewPostgreSQLDialect()).Select("p.id", "p.full_name", "p.age", "o.order_id").
+				FromSubquery(&subquery{
+					builder: New().WithDialect(NewPostgreSQLDialect()).Select("id", "full_name", "age").From("people").Where(Gt("age", 10)),
+				}, "p").
+				RightJoinSubquery(&subquery{
+					builder: New().WithDialect(NewPostgreSQLDialect()).Select("order_id", "person_id").From("orders"),
+				}, "o", "p.id = o.person_id").
+				Where(Like("p.full_name", "%arif")).
+				OrderBy("p.age", "ASC").
 				Limit(10),
+		},
+		{
+			name: "Select with Left Join Subquery Oracle",
+			sb:   New().WithDialect(NewOracleDialect()).Select("p.id", "p.full_name", "p.age", "o.order_id").
+				FromSubquery(&subquery{
+					builder: New().WithDialect(NewOracleDialect()).Select("id", "full_name", "age").From("people").Where(Gt("age", 10)),
+				}, "p").
+				LeftJoinSubquery(&subquery{
+					builder: New().WithDialect(NewOracleDialect()).Select("order_id", "person_id").From("orders"),
+				}, "o", "p.id = o.person_id").
+				Where(LtOrEq("p.age", 20)).
+				OrderBy("p.age", "ASC").
+				Limit(10).Offset(10),
+		},
+		{
+			name: "Select with table is nil MySQL",
+			sb:   New().WithDialect(NewMySQLDialect()).Select("id", "full_name", "age").From("").Where(Gt("age", 10)),
+			isError: true,
+		},
+		{
+			name: "Select with table in subquery is nil MySQL",
+			sb:   New().WithDialect(NewMySQLDialect()).Select("id", "full_name", "age").FromSubquery(&subquery{
+				builder: New().WithDialect(NewMySQLDialect()).Select("id", "full_name", "age").From("people").Where(Gt("age", 10)),
+			}, "p").JoinSubquery(&subquery{
+				builder: New().WithDialect(NewMySQLDialect()).Select("order_id", "person_id"),
+			}, "o", "p.id = o.person_id"),
+			isError: true,
+		},
+		{
+			name: "Select with table in subquery FRPM is nil MySQL",
+			sb:   New().WithDialect(NewMySQLDialect()).Select("id", "full_name", "age").FromSubquery(&subquery{
+				builder: New().WithDialect(NewMySQLDialect()).Select("id", "full_name", "age").Where(Gt("age", 10)),
+			}, "p"),
+			isError: true,
 		},
 	}
 	for _, tt := range tests {
