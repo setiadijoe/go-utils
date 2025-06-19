@@ -121,12 +121,6 @@ func (db *deleteBuilder) ToSQL() (string, []any, error) {
 	// DELETE clause
 	query.WriteString("DELETE FROM ")
 
-	// Add table aliases if using joins
-	if len(db.joins) > 0 {
-		query.WriteString(db.table)
-	}
-
-	query.WriteString(" FROM ")
 	query.WriteString(db.table)
 
 	// JOIN clauses
