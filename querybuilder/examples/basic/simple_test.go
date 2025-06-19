@@ -109,11 +109,11 @@ func TestDeleteBasic(t *testing.T) {
 		isError bool
 	}{
 		{
-			name: "Update MySQL",
+			name: "Delete MySQL",
 			qb:   querybuilder.New().WithDialect(querybuilder.NewMySQLDialect()),
 		},
 		{
-			name: "Update Postgress",
+			name: "Delete Postgress",
 			qb:   querybuilder.New().WithDialect(querybuilder.NewPostgreSQLDialect()),
 		},
 	}
