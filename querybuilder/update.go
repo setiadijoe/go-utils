@@ -15,6 +15,7 @@ type UpdateBuilder interface {
 	Limit(limit int) UpdateBuilder
 	Returning(columns ...string) UpdateBuilder
 	ToSQL() (string, []interface{}, error)
+	SetValues(values map[string]any) UpdateBuilder
 }
 
 // updateBuilder implements UpdateBuilder
@@ -66,6 +67,19 @@ func (ub *updateBuilder) SetRaw(column string, expression string) UpdateBuilder 
 		value:  expression,
 		isRaw:  true,
 	})
+	return ub
+}
+
+// SetValues sets multiple column-value pairs to update
+func (ub *updateBuilder) SetValues(values map[string]any) UpdateBuilder {
+	for col, val := range values {
+		ub.sets = append(ub.sets, setClause{
+			column: col,
+			value:  val,
+			isRaw:  false,
+		})
+	}
+
 	return ub
 }
 

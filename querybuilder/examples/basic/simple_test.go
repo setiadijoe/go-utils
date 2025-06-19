@@ -71,3 +71,33 @@ func TestInsertSingleBasic(t *testing.T) {
 		})
 	}
 }
+
+func TestUpdateBasic(t *testing.T) {
+		tests := []struct {
+		name    string
+		qb      querybuilder.Builder
+		isError bool
+	}{
+		{
+			name: "Update MySQL",
+			qb:   querybuilder.New().WithDialect(querybuilder.NewMySQLDialect()),
+		},
+		{
+			name: "Update Postgress",
+			qb:   querybuilder.New().WithDialect(querybuilder.NewPostgreSQLDialect()),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			query, args, err := tt.qb.Update("people").SetValues(map[string]any{
+				"fullname": "Arif Setiawan",
+				"occupation": "Software Engineer",
+			}).Where(querybuilder.Eq("id", 1)).ToSQL()
+			if tt.isError && err == nil {
+				t.Error("Should return error")
+			} else {
+				t.Logf("query ==========> %s ------- arguments ==========> %+v", query, args)
+			}
+		})
+	}
+}
